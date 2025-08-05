@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>33rpm - Album Rating App</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+        const { Search, Star, User, Music, Calendar, Clock } = lucide;
+
+        // Sample data
+        const sampleAlbums = [
+            {
+                id: 1,
+                title: "The Dark Side of the Moon",
+                artist: "Pink Floyd",
+                year: 1973,
+                tracks: [
+                    { number: 1, title: "Speak to Me", duration: "1:30" },
+                    { number: 2, title: "Breathe (In the Air)", duration: "2:43" },
+                    { number: 3, title: "On the Run", duration: "3:36" },
+                    { number: 4, title: "Time", duration: "7:06" },
+                    { number: 5, title: "Money", duration: "6:23" }
+                ],
+                averageRating: 9.2,
+                totalRatings: 15420
+            },
+            {
+                id: 2,
+                title: "Abbey Road",
+                artist: "The Beatles",
+                year: 1969,
+                tracks: [
+                    { number: 1, title: "Come Together", duration: "4:20" },
+                    { number: 2, title: "Something", duration: "3:03" },
+                    { number: 3, title: "Maxwell's Silver Hammer", duration: "3:27" }
+                ],
+                averageRating: 9.0,
+                totalRatings: 18392
+            },
+            {
+                id: 3,
+                title: "OK Computer",
+                artist: "Radiohead",
+                year: 1997,
+                tracks: [
+                    { number: 1, title: "Airbag", duration: "4:44" },
+                    { number: 2, title: "Paranoid Android", duration: "6:23" },
+                    { number: 3, title: "Karma Police", duration: "4:21" }
+                ],
+                averageRating: 8.8,
+                totalRatings: 12053
+            },
+            {
+                id: 4,
+                title: "Pet Sounds",
+                artist: "The Beach Boys",
+                year: 1966,
+                tracks: [
+                    { number: 1, title: "Wouldn't It Be Nice", duration: "2:31" },
+                    { number: 2, title: "You Still Believe in Me", duration: "2:30" }
+                ],
+                averageRating: 8.7,
+                totalRatings: 7234
+            }
+        ];
+
+        const artists = [
+            { name: "Pink Floyd", albums: [1] },
+            { name: "The Beatles", albums: [2] },
+            { name: "Radiohead", albums: [3] },
+            { name: "The Beach Boys", albums: [4] }
+        ];
+
+        function App() {
+            const [currentView, setCurrentView] = useState('home');
+            const [selectedAlbum, setSelectedAlbum] = useState(null);
+            const [selectedArtist, setSelectedArtist] = useState(null);
+            const [searchQuery, setSearchQuery] = useState('');
+            const [currentUser, setCurrentUser] = useState(null);
+            const [userRatings, setUserRatings] = useState({});
+
+            const handleLogin = () => {
+                setCurrentUser({ id: 1, name: "Demo User" });
+            };
+
+            const handleLogout = () => {
+                setCurrentUser(null);
+            };
+
+            const handleRate = (albumId, rating) => {
+                if (!currentUser) {
+                    alert('Please log in to rate albums');
+                    return;
+                }
+                setUserRatings({ ...userRatings, [albumId]: rating });
+            };
+
+            const getAlbumCover = (album) => {
+                const covers = {
+                    1: "https://upload.wikimedia.org/wikipedia/en/3/3b/Dark_Side_of_the_Moon.png",
+                    2: "https://upload.wikimedia.org/wikipedia/en/4/42/Beatles_-_Abbey_Road.jpg", 
+                    3: "https://upload.wikimedia.org/wikipedia/en/b/ba/Radioheadokcomputer.png",
+                    4: "https://upload.wikimedia.org/wikipedia/en/b/bb/PetSoundsCover.jpg"
+                };
+                return covers[album.id] || `https://picsum.photos/400/400?random=${album.id}`;
+            };
+
+            const filteredAlbums = searchQuery.trim() === '' 
+                ? sampleAlbums 
+                : sampleAlbums.filter(album =>
+                    album.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    album.artist.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+
+            const getTopRatedAlbums = () => [...sampleAlbums].sort((a, b) => b.averageRating - a.averageRating);
+            const getPopularAlbums = () => [...sampleAlbums].sort((a, b) => b.totalRatings - a.totalRatings);
+            const getNewAlbums = () => [...sampleAlbums].sort((a, b) => b.year - a.year);
+
+            const StarRating = ({ rating, onRate, userRating }) => {
+                const [hoverRating, setHoverRating] = useState(0);
+                
+                return React.createElement('div', { className: "flex items-center space-x-3" },
+                    React.createElement('div', { className: "flex" },
+                        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) =>
+                            React.createElement(Star, {
+                                key: star,
+                                className: `w-5 h-5 cursor-pointer transition-colors ${
+                                    star <= (hoverRating || userRating || 0)
+                                        ? 'text-emerald-500 fill-current'
+                                        : 'text-gray-300'
+                                }`,
+                                onMouseEnter: () => setHoverRating(star),
+                                onMouseLeave: () => setHoverRating(0),
+                                onClick: () => onRate && onRate(star)
+                            })
+                        )
+                    ),
+                    React.createElement('span', { className: "text-sm text-gray-500" },
+                        userRating ? `Your rating: ${userRating}/10` : 'Rate this album'
+                    )
+                );
+            };
+
+            const AlbumCard = ({ album }) => {
+                const coverUrl = getAlbumCover(album);
+                const [imageError, setImageError] = useState(false);
+                const colors = ['bg-emerald-600', 'bg-red-600', 'bg-blue-600', 'bg-orange-600'];
+                const colorClass = colors[album.id % colors.length];
+                
+                return React.createElement('div', {
+                    className: "bg-white border border-gray-200 rounded-lg overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1",
+                    onClick: () => {
+                        setSelectedAlbum(album);
+                        setCurrentView('album');
+                    }
+                },
+                    React.createElement('div', { className: "aspect-square overflow-hidden" },
+                        !imageError ? 
+                            React.createElement('img', {
+                                src: coverUrl,
+                                alt: album.title,
+                                className: "w-full h-full object-cover hover:scale-105 transition-transform duration-300",
+                                onError: () => setImageError(true)
+                            }) :
+                            React.createElement('div', { className: `w-full h-full flex flex-col items-center justify-center ${colorClass} text-white p-4` },
+                                React.createElement(Music, { className: "w-12 h-12 mb-4 opacity-80" }),
+                                React.createElement('h3', { className: "font-bold text-lg text-center leading-tight mb-2" },
+                                    album.title.length > 20 ? album.title.substring(0, 20) + '...' : album.title
+                                ),
+                                React.createElement('p', { className: "text-sm opacity-90 text-center mb-2" }, album.artist),
+                                React.createElement('p', { className: "text-xs opacity-70" }, album.year)
+                            )
+                    ),
+                    React.createElement('div', { className: "p-4" },
+                        React.createElement('h3', { className: "font-semibold text-gray-900 mb-1 truncate text-sm" }, album.title),
+                        React.createElement('p', { className: "text-gray-600 mb-3 truncate text-sm" }, album.artist),
+                        React.createElement('div', { className: "flex items-center justify-between" },
+                            React.createElement('span', { className: "text-xs text-gray-500" }, album.year),
+                            React.createElement('div', { className: "flex items-center space-x-1" },
+                                React.createElement(Star, { className: "w-3 h-3 text-emerald-500 fill-current" }),
+                                React.createElement('span', { className: "text-xs font-medium text-gray-900" }, album.averageRating),
+                                React.createElement('span', { className: "text-xs text-gray-500" }, `(${album.totalRatings.toLocaleString()})`)
+                            )
+                        )
+                    )
+                );
+            };
+
+            const HomePage = () => 
+                React.createElement('div', { className: "space-y-8" },
+                    React.createElement('div', { className: "text-center py-16 bg-white border-b border-gray-200" },
+                        React.createElement('h1', { className: "text-5xl font-light text-gray-900 mb-4" }, "33rpm"),
+                        React.createElement('p', { className: "text-xl text-gray-600 font-light" }, "Discover and rate music albums")
+                    ),
+                    React.createElement('div', { className: "max-w-md mx-auto" },
+                        React.createElement('div', { className: "relative" },
+                            React.createElement(Search, { className: "absolute left-4 top-3 w-5 h-5 text-gray-400" }),
+                            React.createElement('input', {
+                                type: "text",
+                                placeholder: "Search albums or artists...",
+                                className: "w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-gray-900",
+                                value: searchQuery,
+                                onChange: (e) => setSearchQuery(e.target.value)
+                            })
+                        )
+                    ),
+                    React.createElement('div', { className: "flex justify-center space-x-8" },
+                        React.createElement('button', {
+                            onClick: () => setCurrentView('top-rated'),
+                            className: "text-emerald-600 hover:text-emerald-700 font-medium"
+                        }, "Top Rated"),
+                        React.createElement('button', {
+                            onClick: () => setCurrentView('popular'),
+                            className: "text-emerald-600 hover:text-emerald-700 font-medium"
+                        }, "Most Popular"),
+                        React.createElement('button', {
+                            onClick: () => setCurrentView('new-albums'),
+                            className: "text-emerald-600 hover:text-emerald-700 font-medium"
+                        }, "New Releases")
+                    ),
+                    React.createElement('div', { className: "max-w-6xl mx-auto" },
+                        React.createElement('h2', { className: "text-2xl font-light text-gray-900 mb-8" },
+                            searchQuery ? 'Search Results' : 'Featured Albums'
+                        ),
+                        React.createElement('div', { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6" },
+                            filteredAlbums.map(album =>
+                                React.createElement(AlbumCard, { key: album.id, album: album })
+                            )
+                        )
+                    )
+                );
+
+            return React.createElement('div', { className: "min-h-screen bg-gray-50" },
+                React.createElement('nav', { className: "bg-white border-b border-gray-200" },
+                    React.createElement('div', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" },
+                        React.createElement('div', { className: "flex justify-between items-center h-16" },
+                            React.createElement('div', { className: "flex items-center space-x-3" },
+                                React.createElement(Music, { className: "w-7 h-7 text-emerald-600" }),
+                                React.createElement('span', {
+                                    className: "text-xl font-light text-gray-900 cursor-pointer",
+                                    onClick: () => {
+                                        setCurrentView('home');
+                                        setSearchQuery('');
+                                    }
+                                }, "33rpm")
+                            ),
+                            React.createElement('div', { className: "flex items-center space-x-4" },
+                                currentUser ?
+                                    React.createElement('div', { className: "flex items-center space-x-4" },
+                                        React.createElement('div', { className: "flex items-center space-x-2 text-sm" },
+                                            React.createElement(User, { className: "w-4 h-4 text-gray-500" }),
+                                            React.createElement('span', { className: "text-gray-700" }, currentUser.name)
+                                        ),
+                                        React.createElement('button', {
+                                            onClick: handleLogout,
+                                            className: "text-sm text-gray-500 hover:text-gray-700"
+                                        }, "Logout")
+                                    ) :
+                                    React.createElement('button', {
+                                        onClick: handleLogin,
+                                        className: "bg-emerald-600 text-white px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
+                                    }, "Sign In")
+                            )
+                        )
+                    )
+                ),
+                React.createElement('main', { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" },
+                    currentView === 'home' && React.createElement(HomePage)
+                )
+            );
+        }
+
+        ReactDOM.render(React.createElement(App), document.getElementById('root'));
+    </script>
+</body>
+</html>
